@@ -45,8 +45,9 @@
     var titles = { list: "我的日记", calendar: "日历", search: "搜索" };
     if (titleEl) { titleEl.textContent = titles[pageName] || "我的日记"; }
 
-    // 切换到列表页时刷新数据
+    // 切换时刷新对应页面数据
     if (pageName === "list") { ListPage.load(); }
+    if (pageName === "calendar") { CalendarPage.render(); }
   }
 
   // 事件绑定
@@ -123,6 +124,8 @@
     // 初始化各模块
     if (typeof Editor !== "undefined") { Editor.init(); }
     if (typeof ListPage !== "undefined") { ListPage.init(); }
+    if (typeof CalendarPage !== "undefined") { CalendarPage.init(); }
+    if (typeof SearchPage !== "undefined") { SearchPage.init(); }
   }
 
   // DOM 就绪后初始化
