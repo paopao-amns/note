@@ -1,48 +1,120 @@
 /* ============================================================
    app.js — 主控制器
-   负责：Service Worker 注册、Tab 切换、模块初始化
-   阶段 2 将填充完整逻辑
+   负责：初始化、路由/Tab切换、Service Worker注册
    ============================================================ */
 
-// Service Worker 注册（生产环境）
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", function() {
-    navigator.serviceWorker.register("/note/sw.js").catch(function() {
-      // 开发环境（本地文件打开）注册失败是正常的
-    });
-  });
-}
+(function() {
+  "use strict";
 
-// Tab 切换
-document.addEventListener("DOMContentLoaded", function() {
-  var tabBtns = document.querySelectorAll(".tab-btn");
-  var pages = document.querySelectorAll(".page");
-  var titleEl = document.querySelector(".top-bar-title");
+  var tabBtns;
+  var pages;
+  var titleEl;
+  var fabBtn;
 
-  tabBtns.forEach(function(btn) {
-    btn.addEventListener("click", function() {
-      var page = this.getAttribute("data-page");
-
-      // 切换激活的 Tab
-      tabBtns.forEach(function(b) { b.classList.remove("active"); });
-      this.classList.add("active");
-
-      // 切换页面
-      pages.forEach(function(p) { p.classList.remove("active"); });
-      var target = document.getElementById("page-" + page);
-      if (target) { target.classList.add("active"); }
-
-      // 更新标题
-      var titles = { list: "我的日记", calendar: "日历", search: "搜索" };
-      if (titleEl) { titleEl.textContent = titles[page] || "我的日记"; }
-    });
-  });
-
-  // 悬浮按钮点击（阶段 2 实现编辑器打开逻辑）
-  var fab = document.getElementById("fab-new");
-  if (fab) {
-    fab.addEventListener("click", function() {
-      // 阶段 2 实现
-    });
+  // Service Worker 注册
+  function registerSW() {
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/note/sw.js").then(function(reg) {
+          console.log("SW registered:", reg.scope);
+        }).catch(function(err) {
+          console.log("SW registration failed (本地文件打开会失败，正常):", err.message);
+        });
+      });
+    }
   }
-});
+
+  // Tab 切换
+  function switchTab(pageName) {
+    // 更新 Tab 按钮状态
+    tabBtns.forEach(function(btn) {
+      var p = btn.getAttribute("data-page");
+      if (p === pageName) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+
+    // 更新页面显示
+    pages.forEach(function(p) { p.classList.remove("active"); });
+    var target = document.getElementById("page-" + pageName);
+    if (target) { target.classList.add("active"); }
+
+    // 更新标题
+    var titles = { list: "我的日记", calendar: "日历", search: "搜索" };
+    if (titleEl) { titleEl.textContent = titles[pageName] || "我的日记"; }
+
+    // 切换到列表页时刷新数据
+    if (pageName === "list") { ListPage.load(); }
+  }
+
+  // 事件绑定
+  function bindEvents() {
+    // Tab 按钮点击
+    document.addEventListener("click", function(e) {
+      var btn = e.target.closest(".tab-btn");
+      if (!btn) { return; }
+      var page = btn.getAttribute("data-page");
+      if (page) { switchTab(page); }
+    });
+
+    // FAB 新建按钮
+    document.addEventListener("click", function(e) {
+      if (e.target.closest("#fab-new")) {
+        Editor.openNew();
+      }
+    });
+
+    // 照片灯箱关闭
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "lightbox-close" || e.target.id === "lightbox") {
+        document.getElementById("lightbox").classList.remove("open");
+      }
+    });
+
+    // 照片灯箱——点击列表中的缩略图放大查看
+    document.addEventListener("click", function(e) {
+      var thumb = e.target.closest(".entry-card-thumb");
+      if (!thumb) { return; }
+      e.stopPropagation(); // 阻止触发卡片编辑
+      var lightbox = document.getElementById("lightbox");
+      var lightboxImg = document.getElementById("lightbox-img");
+      lightboxImg.src = thumb.src;
+      lightbox.classList.add("open");
+    });
+
+    // 列表页滚动到底部加载更多
+    var listContent = document.getElementById("list-content");
+    if (listContent) {
+      listContent.addEventListener("scroll", function() {
+        var scrollBottom = listContent.scrollHeight - listContent.scrollTop - listContent.clientHeight;
+        if (scrollBottom < 200) {
+          ListPage.loadMore();
+        }
+      }, { passive: true });
+    }
+  }
+
+  // 初始化
+  function init() {
+    tabBtns = document.querySelectorAll(".tab-btn");
+    pages = document.querySelectorAll(".page");
+    titleEl = document.querySelector(".top-bar-title");
+    fabBtn = document.getElementById("fab-new");
+
+    registerSW();
+    bindEvents();
+
+    // 初始化各模块
+    if (typeof Editor !== "undefined") { Editor.init(); }
+    if (typeof ListPage !== "undefined") { ListPage.init(); }
+  }
+
+  // DOM 就绪后初始化
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();

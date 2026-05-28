@@ -12,8 +12,7 @@
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <title>我的日记</title>
   <link rel="stylesheet" href="css/style.css">
-  <!-- Dexie.js CDN for IndexedDB -->
-  <script src="https://cdn.jsdelivr.net/npm/dexie@3/dist/dexie.min.js" defer></script>
+  <!-- Dexie.js 在底部 body 中加载，确保在业务脚本之前可用 -->
 </head>
 <body>
 
@@ -151,6 +150,8 @@
   </div>
 
   <!-- ==================== 脚本加载 ==================== -->
+  <!-- Dexie.js 必须最先加载，业务脚本依赖它 -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3/dist/dexie.min.js"></script>
   <script src="js/db.js"></script>
   <script src="js/list.js"></script>
   <script src="js/editor.js"></script>

@@ -706,6 +706,12 @@ mark {
 .entry-card-wrapper {
   position: relative;
   overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.entry-card-body {
+  display: flex;
+  flex-direction: column;
 }
 
 .entry-card-delete-bg {
