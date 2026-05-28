@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="我的日记">
+  <meta name="theme-color" content="#FFFFFF">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icon.svg">
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <title>我的日记</title>
+  <link rel="stylesheet" href="css/style.css">
+  <!-- Dexie.js CDN for IndexedDB -->
+  <script src="https://cdn.jsdelivr.net/npm/dexie@3/dist/dexie.min.js" defer></script>
+</head>
+<body>
+
+  <!-- ==================== 页面容器 ==================== -->
+  <div id="app">
+
+    <!-- 页面：日记列表 -->
+    <div id="page-list" class="page active">
+      <header class="top-bar">
+        <h1 class="top-bar-title">我的日记</h1>
+      </header>
+      <main class="content" id="list-content">
+        <!-- 空状态 -->
+        <div class="empty-state" id="list-empty">
+          <div class="empty-icon">📝</div>
+          <p class="empty-title">还没有日记</p>
+          <p class="empty-sub">点击右下角 + 开始写第一篇日记吧</p>
+        </div>
+        <!-- 日记列表由 JS 动态渲染 -->
+        <div class="entry-list" id="entry-list"></div>
+      </main>
+    </div>
+
+    <!-- 页面：日历 -->
+    <div id="page-calendar" class="page">
+      <header class="top-bar">
+        <h1 class="top-bar-title">日历</h1>
+      </header>
+      <main class="content" id="calendar-content">
+        <!-- 月份切换 -->
+        <div class="month-picker" id="month-picker">
+          <button class="month-btn" id="month-prev">&lsaquo;</button>
+          <span class="month-label" id="month-label">2026年5月</span>
+          <button class="month-btn" id="month-next">&rsaquo;</button>
+        </div>
+        <!-- 星期头 -->
+        <div class="weekday-row">
+          <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+        <!-- 日期网格 -->
+        <div class="date-grid" id="date-grid"></div>
+        <!-- 选中日期的日记 -->
+        <div class="selected-date-entries" id="selected-date-entries">
+          <p class="selected-date-label" id="selected-date-label">选择日期查看日记</p>
+          <div id="date-entries-list"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 页面：搜索 -->
+    <div id="page-search" class="page">
+      <header class="top-bar">
+        <h1 class="top-bar-title">搜索</h1>
+      </header>
+      <main class="content" id="search-content">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="search" class="search-input" id="search-input" placeholder="搜索日记...">
+        </div>
+        <div class="search-results" id="search-results">
+          <p class="search-hint" id="search-hint">输入关键词搜索日记标题和内容</p>
+          <div id="search-result-list"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- 底部 Tab 栏 -->
+    <nav class="tab-bar">
+      <button class="tab-btn active" data-page="list">
+        <span class="tab-icon">📋</span>
+        <span class="tab-label">列表</span>
+      </button>
+      <button class="tab-btn" data-page="calendar">
+        <span class="tab-icon">📅</span>
+        <span class="tab-label">日历</span>
+      </button>
+      <button class="tab-btn" data-page="search">
+        <span class="tab-icon">🔍</span>
+        <span class="tab-label">搜索</span>
+      </button>
+    </nav>
+
+    <!-- 悬浮新建按钮 -->
+    <button class="fab" id="fab-new" title="新建日记">+</button>
+
+  </div>
+
+  <!-- ==================== 编辑器模态窗 ==================== -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal-editor">
+      <div class="modal-header">
+        <button class="modal-btn modal-cancel" id="modal-cancel">取消</button>
+        <span class="modal-title" id="modal-title">新建日记</span>
+        <button class="modal-btn modal-save" id="modal-save">保存</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="editor-title" id="editor-title" placeholder="标题（可选）" maxlength="100">
+        <textarea class="editor-content" id="editor-content" placeholder="今天发生了什么..." rows="8"></textarea>
+
+        <!-- 媒体预览区 -->
+        <div class="media-grid" id="media-grid"></div>
+
+        <!-- 媒体添加按钮 -->
+        <div class="media-actions">
+          <button class="media-btn" id="btn-add-image">📷 添加图片</button>
+          <button class="media-btn" id="btn-add-video">🎬 添加视频</button>
+        </div>
+
+        <!-- 隐藏的文件选择器 -->
+        <input type="file" id="file-image" accept="image/*" capture="environment" style="display:none">
+        <input type="file" id="file-video" accept="video/*" capture="environment" style="display:none">
+      </div>
+      <div class="modal-footer" id="editor-footer">
+        <span class="editor-date" id="editor-date"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 图片放大查看 ==================== -->
+  <div class="lightbox" id="lightbox">
+    <button class="lightbox-close" id="lightbox-close">&times;</button>
+    <img id="lightbox-img" src="" alt="查看图片">
+  </div>
+
+  <!-- ==================== 删除确认 ==================== -->
+  <div class="confirm-overlay" id="confirm-overlay">
+    <div class="confirm-dialog">
+      <p class="confirm-text">确定要删除这篇日记吗？</p>
+      <p class="confirm-sub">删除后无法恢复</p>
+      <div class="confirm-actions">
+        <button class="confirm-btn confirm-cancel" id="confirm-cancel">取消</button>
+        <button class="confirm-btn confirm-delete" id="confirm-delete">删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 脚本加载 ==================== -->
+  <script src="js/db.js"></script>
+  <script src="js/list.js"></script>
+  <script src="js/editor.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/search.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

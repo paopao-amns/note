@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- 背景圆角矩形 -->
+  <rect x="16" y="16" width="160" height="170" rx="28" ry="28" fill="#4A90D9"/>
+  <!-- 内页 -->
+  <rect x="30" y="30" width="132" height="142" rx="12" ry="12" fill="#FFFFFF"/>
+  <!-- 横线模拟文字 -->
+  <rect x="50" y="55" width="92" height="6" rx="3" fill="#4A90D9"/>
+  <rect x="50" y="72" width="72" height="4" rx="2" fill="#A8C8E8"/>
+  <rect x="50" y="84" width="80" height="4" rx="2" fill="#A8C8E8"/>
+  <rect x="50" y="96" width="64" height="4" rx="2" fill="#A8C8E8"/>
+  <rect x="50" y="108" width="76" height="4" rx="2" fill="#A8C8E8"/>
+  <rect x="50" y="120" width="56" height="4" rx="2" fill="#A8C8E8"/>
+  <!-- 笔尖装饰 -->
+  <circle cx="140" cy="140" r="18" fill="#4A90D9" opacity="0.15"/>
+  <circle cx="140" cy="140" r="10" fill="#4A90D9" opacity="0.3"/>
+  <circle cx="140" cy="140" r="4" fill="#4A90D9"/>
+</svg>
