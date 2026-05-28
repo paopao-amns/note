@@ -268,7 +268,15 @@ input, textarea {
 
 /* --- 编辑器页面（全屏二级页面）--- */
 #page-editor.page.active {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  z-index: 100;
 }
 
 .editor-top-bar {
