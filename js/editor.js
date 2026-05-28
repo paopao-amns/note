@@ -30,12 +30,13 @@ var Editor = (function() {
   // 打开编辑器——新建模式
   function openNew() {
     cacheDom();
+    if (!overlay) { return; }
     currentEntry = null;
-    inputTitle.value = "";
-    textContent.value = "";
-    mediaGrid.innerHTML = "";
-    modalTitle.textContent = "新建日记";
-    editorDate.textContent = "";
+    if (inputTitle) { inputTitle.value = ""; }
+    if (textContent) { textContent.value = ""; }
+    if (mediaGrid) { mediaGrid.innerHTML = ""; }
+    if (modalTitle) { modalTitle.textContent = "新建日记"; }
+    if (editorDate) { editorDate.textContent = ""; }
     show();
   }
 
@@ -56,11 +57,13 @@ var Editor = (function() {
 
   // 显示模态窗
   function show() {
+    if (!overlay) { return; }
     isOpen = true;
     overlay.classList.add("open");
     document.body.style.overflow = "hidden";
-    // 焦点放到标题输入框
-    setTimeout(function() { inputTitle.focus(); }, 100);
+    setTimeout(function() {
+      if (inputTitle) { inputTitle.focus(); }
+    }, 100);
   }
 
   // 关闭模态窗

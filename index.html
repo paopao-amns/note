@@ -96,7 +96,7 @@
     </nav>
 
     <!-- 悬浮新建按钮 -->
-    <button class="fab" id="fab-new" title="新建日记">+</button>
+    <button type="button" class="fab" id="fab-new" title="新建日记">+</button>
 
   </div>
 
@@ -150,8 +150,13 @@
   </div>
 
   <!-- ==================== 脚本加载 ==================== -->
-  <!-- Dexie.js 必须最先加载，业务脚本依赖它 -->
+  <!-- Dexie.js 必须最先加载，两个 CDN 互为备份 -->
   <script src="https://cdn.jsdelivr.net/npm/dexie@3/dist/dexie.min.js"></script>
+  <script>
+    if (typeof Dexie === 'undefined') {
+      document.write('<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"><\/script>');
+    }
+  </script>
   <script src="js/db.js"></script>
   <script src="js/list.js"></script>
   <script src="js/editor.js"></script>

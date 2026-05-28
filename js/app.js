@@ -59,12 +59,26 @@
       if (page) { switchTab(page); }
     });
 
-    // FAB 新建按钮
-    document.addEventListener("click", function(e) {
-      if (e.target.closest("#fab-new")) {
-        Editor.openNew();
-      }
-    });
+    // FAB 新建按钮（直接绑定，避免 closest 兼容性问题）
+    var fab = document.getElementById("fab-new");
+    if (fab) {
+      fab.addEventListener("click", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          if (typeof Editor !== "undefined") {
+            Editor.openNew();
+          }
+        } catch (err) {
+          alert("打开编辑器失败: " + err.message);
+        }
+      });
+      // 同时监听 touchstart 提升响应速度
+      fab.addEventListener("touchend", function(e) {
+        e.preventDefault();
+        fab.click();
+      });
+    }
 
     // 照片灯箱关闭
     document.addEventListener("click", function(e) {
