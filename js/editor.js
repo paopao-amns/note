@@ -65,6 +65,12 @@ var Editor = (function() {
   // 显示编辑器页面
   function showPage() {
     isOpen = true;
+
+    // 先移除其他所有页面的 active，避免两个页面同时显示
+    var allPages = document.querySelectorAll(".page");
+    for (var i = 0; i < allPages.length; i++) {
+      allPages[i].classList.remove("active");
+    }
     editorPage.classList.add("active");
 
     // 隐藏 tab 栏和 FAB
