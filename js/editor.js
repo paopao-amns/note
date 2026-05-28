@@ -1,89 +1,110 @@
 /* ============================================================
-   editor.js — 日记编辑器
-   负责：新建/编辑日记、模态窗控制、保存逻辑
+   editor.js — 日记编辑器（全屏二级页面）
+   负责：新建/编辑日记、媒体插入、页面导航
    ============================================================ */
 
 var Editor = (function() {
   "use strict";
 
-  var currentEntry = null;  // 当前编辑的日记（null 表示新建）
+  var currentEntry = null;  // 当前编辑的日记（null = 新建）
   var isOpen = false;
+  var returnToPage = "list"; // 保存/返回后跳回的页面
 
-  // DOM 元素引用
-  var overlay, modal, btnCancel, btnSave, inputTitle, textContent;
-  var modalTitle, editorDate, fileImage, fileVideo, mediaGrid;
+  // DOM 元素
+  var editorPage, editorTitle, editorPageTitle, textContent;
+  var mediaGrid, btnSave, btnBack, editorDate;
+  var fileImage, fileVideo;
 
   function cacheDom() {
-    overlay = document.getElementById("modal-overlay");
-    modal = document.getElementById("modal-editor");
-    btnCancel = document.getElementById("modal-cancel");
-    btnSave = document.getElementById("modal-save");
-    inputTitle = document.getElementById("editor-title");
+    editorPage = document.getElementById("page-editor");
+    editorTitle = document.getElementById("editor-title");
+    editorPageTitle = document.getElementById("editor-page-title");
     textContent = document.getElementById("editor-content");
-    modalTitle = document.getElementById("modal-title");
+    mediaGrid = document.getElementById("media-grid");
+    btnSave = document.getElementById("editor-save");
+    btnBack = document.getElementById("editor-back");
     editorDate = document.getElementById("editor-date");
     fileImage = document.getElementById("file-image");
     fileVideo = document.getElementById("file-video");
-    mediaGrid = document.getElementById("media-grid");
   }
 
   // 打开编辑器——新建模式
-  function openNew() {
+  function openNew(fromPage) {
     cacheDom();
-    if (!overlay) { return; }
+    if (!editorPage) { return; }
+    returnToPage = fromPage || "list";
     currentEntry = null;
-    if (inputTitle) { inputTitle.value = ""; }
+    if (editorTitle) { editorTitle.value = ""; }
     if (textContent) { textContent.value = ""; }
     if (mediaGrid) { mediaGrid.innerHTML = ""; }
-    if (modalTitle) { modalTitle.textContent = "新建日记"; }
+    if (editorPageTitle) { editorPageTitle.textContent = "新建日记"; }
     if (editorDate) { editorDate.textContent = ""; }
-    show();
+    showPage();
   }
 
   // 打开编辑器——编辑模式
-  function openEdit(id) {
+  function openEdit(id, fromPage) {
     cacheDom();
+    if (!editorPage) { return; }
+    returnToPage = fromPage || "list";
+
     DiaryDB.getEntry(id).then(function(entry) {
       if (!entry) { return; }
       currentEntry = entry;
-      inputTitle.value = entry.title || "";
-      textContent.value = entry.content || "";
-      modalTitle.textContent = "编辑日记";
-      editorDate.textContent = "创建于 " + formatDate(entry.createdAt);
+      if (editorTitle) { editorTitle.value = entry.title || ""; }
+      if (textContent) { textContent.value = entry.content || ""; }
+      if (editorPageTitle) { editorPageTitle.textContent = "编辑日记"; }
+      if (editorDate) { editorDate.textContent = "创建于 " + formatDate(entry.createdAt); }
       renderMedia(entry.media);
-      show();
+      showPage();
+    }).catch(function(err) {
+      window.alert("加载日记失败: " + err.message);
     });
   }
 
-  // 显示模态窗
-  function show() {
-    if (!overlay) { return; }
+  // 显示编辑器页面
+  function showPage() {
     isOpen = true;
-    overlay.classList.add("open");
+    editorPage.classList.add("active");
+
+    // 隐藏 tab 栏和 FAB
+    var tabBar = document.querySelector(".tab-bar");
+    var fab = document.getElementById("fab-new");
+    if (tabBar) { tabBar.style.display = "none"; }
+    if (fab) { fab.style.display = "none"; }
+
     document.body.style.overflow = "hidden";
     setTimeout(function() {
-      if (inputTitle) { inputTitle.focus(); }
-    }, 100);
+      if (editorTitle) { editorTitle.focus(); }
+    }, 300);
   }
 
-  // 关闭模态窗
+  // 关闭编辑器，返回上一页
   function close() {
+    if (!isOpen) { return; }
     isOpen = false;
-    modal.classList.add("closing");
-    setTimeout(function() {
-      overlay.classList.remove("open");
-      modal.classList.remove("closing");
-      document.body.style.overflow = "";
-      currentEntry = null;
-    }, 180);
+    currentEntry = null;
+
+    editorPage.classList.remove("active");
+
+    // 恢复 tab 栏和 FAB
+    var tabBar = document.querySelector(".tab-bar");
+    var fab = document.getElementById("fab-new");
+    if (tabBar) { tabBar.style.display = ""; }
+    if (fab) { fab.style.display = ""; }
+
+    document.body.style.overflow = "";
+
+    // 触发页面切换以刷新列表
+    App.switchTab(returnToPage);
   }
 
   // 保存日记
   function save() {
-    var title = inputTitle.value.trim();
-    var content = textContent.value.trim();
+    var title = editorTitle ? editorTitle.value.trim() : "";
+    var content = textContent ? textContent.value.trim() : "";
 
-    // 允许空标题，但不允许标题和内容都为空
+    // 不允许内容全部为空
     if (!title && !content && (!currentEntry || !currentEntry.media || currentEntry.media.length === 0)) {
       showToast("请输入标题或内容");
       return;
@@ -103,14 +124,13 @@ var Editor = (function() {
 
     DiaryDB.saveEntry(entry).then(function(saved) {
       close();
-      // 通知列表刷新
       window.dispatchEvent(new CustomEvent("entry-saved", { detail: saved }));
     }).catch(function(err) {
       showToast("保存失败: " + err.message);
     });
   }
 
-  // 渲染已添加的媒体（阶段 4 完善）
+  // 渲染媒体缩略图
   function renderMedia(mediaList) {
     if (!mediaGrid) { return; }
     mediaGrid.innerHTML = "";
@@ -121,28 +141,27 @@ var Editor = (function() {
       var blob = new Blob([item.data], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
       var url = URL.createObjectURL(blob);
       if (item.type === "image") {
-        div.innerHTML = '<img src="' + url + '" alt="">' +
-          '<button class="media-remove" data-index="' + index + '">&times;</button>';
+        div.innerHTML = '<img src="' + url + '" alt="" loading="lazy">' +
+          '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
       } else {
         div.innerHTML = '<video src="' + url + '" muted></video>' +
-          '<button class="media-remove" data-index="' + index + '">&times;</button>';
+          '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
       }
       mediaGrid.appendChild(div);
     });
   }
 
-  // 删除媒体附件
+  // 删除媒体
   function removeMedia(index) {
     if (!currentEntry || !currentEntry.media) { return; }
     currentEntry.media.splice(index, 1);
     renderMedia(currentEntry.media);
   }
 
-  // 添加媒体文件（阶段 4 完善）
+  // 添加媒体文件
   function addMediaFiles(files, type) {
     if (!files || files.length === 0) { return; }
     if (!currentEntry) {
-      // 新建模式下，先将空壳作为 currentEntry
       currentEntry = { id: null, title: "", content: "", media: [], createdAt: new Date().toISOString() };
     }
     if (!currentEntry.media) { currentEntry.media = []; }
@@ -181,38 +200,33 @@ var Editor = (function() {
 
   // 事件绑定
   function bindEvents() {
-    // 取消按钮
-    document.addEventListener("click", function(e) {
-      if (e.target.id === "modal-cancel") { close(); }
-    });
-
     // 保存按钮
     document.addEventListener("click", function(e) {
-      if (e.target.id === "modal-save") { save(); }
+      if (e.target.id === "editor-save") { save(); }
     });
 
-    // 点击遮罩关闭
+    // 返回按钮
     document.addEventListener("click", function(e) {
-      if (e.target === overlay && isOpen) { close(); }
+      if (e.target.id === "editor-back") { close(); }
     });
 
-    // 添加图片按钮
+    // 添加图片
     document.addEventListener("click", function(e) {
       if (e.target.id === "btn-add-image") {
-        fileImage = document.getElementById("file-image");
-        if (fileImage) { fileImage.click(); }
+        var el = document.getElementById("file-image");
+        if (el) { el.click(); }
       }
     });
 
-    // 添加视频按钮
+    // 添加视频
     document.addEventListener("click", function(e) {
       if (e.target.id === "btn-add-video") {
-        fileVideo = document.getElementById("file-video");
-        if (fileVideo) { fileVideo.click(); }
+        var el = document.getElementById("file-video");
+        if (el) { el.click(); }
       }
     });
 
-    // 文件选择变化
+    // 文件选择
     document.addEventListener("change", function(e) {
       if (e.target.id === "file-image") {
         addMediaFiles(e.target.files, "image");
@@ -224,7 +238,7 @@ var Editor = (function() {
       }
     });
 
-    // 删除媒体（通过事件委托）
+    // 删除媒体
     document.addEventListener("click", function(e) {
       if (e.target.classList.contains("media-remove")) {
         var idx = parseInt(e.target.getAttribute("data-index"));
@@ -233,7 +247,6 @@ var Editor = (function() {
     });
   }
 
-  // 初始化
   function init() {
     cacheDom();
     bindEvents();

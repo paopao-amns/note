@@ -1,15 +1,12 @@
 /* ============================================================
    app.js — 主控制器
-   负责：初始化、路由/Tab切换、Service Worker注册
+   负责：初始化、路由/Tab切换、编辑器页面导航、Service Worker
    ============================================================ */
 
-(function() {
+var App = (function() {
   "use strict";
 
-  var tabBtns;
-  var pages;
-  var titleEl;
-  var fabBtn;
+  var tabBtns, pages, titleEl, tabBar;
 
   // Service Worker 注册
   function registerSW() {
@@ -18,25 +15,43 @@
         navigator.serviceWorker.register("/note/sw.js").then(function(reg) {
           console.log("SW registered:", reg.scope);
         }).catch(function(err) {
-          console.log("SW registration failed (本地文件打开会失败，正常):", err.message);
+          console.log("SW registration failed:", err.message);
         });
       });
     }
   }
 
-  // Tab 切换
+  // 查询当前激活的页面
+  function currentPage() {
+    for (var i = 0; i < pages.length; i++) {
+      if (pages[i].classList.contains("active")) {
+        var id = pages[i].id;
+        if (id === "page-list") { return "list"; }
+        if (id === "page-calendar") { return "calendar"; }
+        if (id === "page-search") { return "search"; }
+      }
+    }
+    return "list";
+  }
+
+  // Tab / 页面切换（对外暴露，editor 关闭时会调用）
   function switchTab(pageName) {
+    // 隐藏编辑器页面
+    var editorPage = document.getElementById("page-editor");
+    if (editorPage) { editorPage.classList.remove("active"); }
+
+    // 恢复 tab 栏和 FAB
+    if (tabBar) { tabBar.style.display = ""; }
+    var fab = document.getElementById("fab-new");
+    if (fab) { fab.style.display = ""; }
+
     // 更新 Tab 按钮状态
     tabBtns.forEach(function(btn) {
       var p = btn.getAttribute("data-page");
-      if (p === pageName) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
+      btn.classList.toggle("active", p === pageName);
     });
 
-    // 更新页面显示
+    // 只显示目标页面
     pages.forEach(function(p) { p.classList.remove("active"); });
     var target = document.getElementById("page-" + pageName);
     if (target) { target.classList.add("active"); }
@@ -45,9 +60,11 @@
     var titles = { list: "我的日记", calendar: "日历", search: "搜索" };
     if (titleEl) { titleEl.textContent = titles[pageName] || "我的日记"; }
 
-    // 切换时刷新对应页面数据
-    if (pageName === "list") { ListPage.load(); }
-    if (pageName === "calendar") { CalendarPage.render(); }
+    document.body.style.overflow = "";
+
+    // 刷新对应页面数据
+    if (pageName === "list" && typeof ListPage !== "undefined") { ListPage.load(); }
+    if (pageName === "calendar" && typeof CalendarPage !== "undefined") { CalendarPage.render(); }
   }
 
   // 事件绑定
@@ -60,7 +77,7 @@
       if (page) { switchTab(page); }
     });
 
-    // FAB 新建按钮（直接绑定，避免 closest 兼容性问题）
+    // FAB 新建按钮
     var fab = document.getElementById("fab-new");
     if (fab) {
       fab.addEventListener("click", function(e) {
@@ -68,13 +85,13 @@
         e.stopPropagation();
         try {
           if (typeof Editor !== "undefined") {
-            Editor.openNew();
+            Editor.openNew(currentPage());
           }
         } catch (err) {
-          alert("打开编辑器失败: " + err.message);
+          window.alert("打开编辑器失败: " + err.message);
         }
       });
-      // 同时监听 touchstart 提升响应速度
+
       fab.addEventListener("touchend", function(e) {
         e.preventDefault();
         fab.click();
@@ -88,23 +105,23 @@
       }
     });
 
-    // 照片灯箱——点击列表中的缩略图放大查看
+    // 点击缩略图放大查看
     document.addEventListener("click", function(e) {
       var thumb = e.target.closest(".entry-card-thumb");
       if (!thumb) { return; }
-      e.stopPropagation(); // 阻止触发卡片编辑
+      e.stopPropagation();
       var lightbox = document.getElementById("lightbox");
       var lightboxImg = document.getElementById("lightbox-img");
       lightboxImg.src = thumb.src;
       lightbox.classList.add("open");
     });
 
-    // 列表页滚动到底部加载更多
+    // 列表页滚动加载更多
     var listContent = document.getElementById("list-content");
     if (listContent) {
       listContent.addEventListener("scroll", function() {
         var scrollBottom = listContent.scrollHeight - listContent.scrollTop - listContent.clientHeight;
-        if (scrollBottom < 200) {
+        if (scrollBottom < 200 && typeof ListPage !== "undefined") {
           ListPage.loadMore();
         }
       }, { passive: true });
@@ -116,7 +133,7 @@
     tabBtns = document.querySelectorAll(".tab-btn");
     pages = document.querySelectorAll(".page");
     titleEl = document.querySelector(".top-bar-title");
-    fabBtn = document.getElementById("fab-new");
+    tabBar = document.querySelector(".tab-bar");
 
     registerSW();
     bindEvents();
@@ -134,4 +151,9 @@
   } else {
     init();
   }
+
+  return {
+    switchTab: switchTab,
+    currentPage: currentPage
+  };
 })();

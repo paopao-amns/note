@@ -1,5 +1,5 @@
 // Service Worker — 缓存策略：预缓存核心文件，运行时缓存 CDN 资源
-const CACHE_NAME = "diary-v4";
+const CACHE_NAME = "diary-v5";
 
 // 预缓存的文件列表（部署后首次访问即缓存）
 const PRECACHE_URLS = [

@@ -195,7 +195,7 @@ var ListPage = (function() {
       var card = e.target.closest(".entry-card");
       if (!card) { return; }
       var id = card.getAttribute("data-id");
-      if (id) { Editor.openEdit(id); }
+      if (id) { Editor.openEdit(id, "list"); }
     });
 
     // 滑动删除逻辑

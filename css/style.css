@@ -266,92 +266,46 @@ input, textarea {
   color: var(--text-sub);
 }
 
-/* --- 编辑器模态窗 --- */
-.modal-overlay {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.35);
-  z-index: 100;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-.modal-overlay.open {
+/* --- 编辑器页面（全屏二级页面）--- */
+#page-editor.page.active {
   display: flex;
 }
 
-.modal {
-  background: var(--bg);
-  border-radius: 20px 20px 0 0;
-  width: 100%;
-  max-width: 480px;
-  max-height: 92vh;
-  display: flex;
-  flex-direction: column;
-  animation: modalIn 0.25s ease-out;
-}
-
-@keyframes modalIn {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
-}
-
-@keyframes modalOut {
-  from { transform: translateY(0); }
-  to   { transform: translateY(100%); }
-}
-
-.modal.closing {
-  animation: modalOut 0.2s ease-in forwards;
-}
-
-.modal-header {
+.editor-top-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--divider);
+  padding: 12px 12px;
+  padding-top: calc(12px + env(safe-area-inset-top, 0px));
 }
 
-.modal-btn {
+.top-bar-back {
   font-size: 16px;
+  color: var(--accent);
   min-width: 44px;
   min-height: 44px;
-  display: flex;
-  align-items: center;
 }
 
-.modal-cancel {
-  color: var(--text-sub);
-}
-
-.modal-save {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.modal-title {
+.top-bar-save {
   font-size: 16px;
   font-weight: 600;
-  color: var(--text-title);
+  color: var(--accent);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 4px;
 }
 
-.modal-body {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+.editor-body {
+  padding: 0 16px;
 }
 
 .editor-title {
-  font-size: 20px;
+  display: block;
+  width: 100%;
+  font-size: 22px;
   font-weight: 600;
   color: var(--text-title);
-  padding: 8px 0;
+  padding: 16px 0 12px;
   border-bottom: 1px solid var(--divider);
 }
 
@@ -360,15 +314,31 @@ input, textarea {
   font-weight: 400;
 }
 
-.editor-content {
-  font-size: 16px;
+.editor-textarea {
+  display: block;
+  width: 100%;
+  font-size: 17px;
   color: var(--text-body);
-  line-height: 1.6;
+  line-height: 1.7;
   resize: none;
-  min-height: 160px;
+  min-height: 220px;
+  padding: 16px 0;
+  field-sizing: content;
 }
 
-.editor-content::placeholder {
+.editor-textarea::placeholder {
+  color: var(--text-sub);
+}
+
+.editor-footer {
+  padding: 12px 16px;
+  padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--divider);
+  text-align: center;
+}
+
+.editor-date {
+  font-size: 13px;
   color: var(--text-sub);
 }
 
@@ -377,6 +347,7 @@ input, textarea {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
+  margin-bottom: 16px;
 }
 
 .media-item {
@@ -410,6 +381,7 @@ input, textarea {
 .media-actions {
   display: flex;
   gap: 12px;
+  margin-top: 8px;
 }
 
 .media-btn {
@@ -426,17 +398,6 @@ input, textarea {
 
 .media-btn:active {
   background: #E3F0FA;
-}
-
-.modal-footer {
-  padding: 12px 16px;
-  border-top: 1px solid var(--divider);
-  text-align: center;
-}
-
-.editor-date {
-  font-size: 13px;
-  color: var(--text-sub);
 }
 
 /* --- 日历 --- */

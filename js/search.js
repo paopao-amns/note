@@ -121,7 +121,7 @@ var SearchPage = (function() {
       var item = e.target.closest(".search-result-item");
       if (!item) { return; }
       var id = item.getAttribute("data-id");
-      if (id && typeof Editor !== "undefined") { Editor.openEdit(id); }
+      if (id && typeof Editor !== "undefined") { Editor.openEdit(id, "search"); }
     });
 
     // 监听保存事件，重新搜索

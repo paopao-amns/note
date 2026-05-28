@@ -221,7 +221,7 @@ var CalendarPage = (function() {
       var card = e.target.closest("#date-entries-list .entry-card");
       if (!card) { return; }
       var id = card.getAttribute("data-id");
-      if (id && typeof Editor !== "undefined") { Editor.openEdit(id); }
+      if (id && typeof Editor !== "undefined") { Editor.openEdit(id, "calendar"); }
     });
 
     // 监听保存事件，刷新日历
