@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="assets/icon.svg">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <title>我的日记</title>
-  <link rel="stylesheet" href="css/style.css?v=9">
+  <link rel="stylesheet" href="css/style.css?v=10">
   <!-- Dexie.js 在底部 body 中加载，确保在业务脚本之前可用 -->
 </head>
 <body>
@@ -23,6 +23,7 @@
     <div id="page-list" class="page active">
       <header class="top-bar">
         <h1 class="top-bar-title">我的日记</h1>
+        <button class="top-bar-action" id="btn-settings" title="设置">⚙️</button>
       </header>
       <main class="content" id="list-content">
         <!-- 空状态 -->
@@ -129,6 +130,18 @@
     <img id="lightbox-img" src="" alt="查看图片">
   </div>
 
+  <!-- ==================== 导出 / 导入菜单 ==================== -->
+  <div class="action-overlay" id="action-overlay">
+    <div class="action-sheet">
+      <p class="action-sheet-title">数据管理</p>
+      <button class="action-btn" id="btn-export-json">📦 导出 JSON（备份 / 迁移）</button>
+      <button class="action-btn" id="btn-export-html">🌐 导出 HTML（电脑阅读）</button>
+      <button class="action-btn" id="btn-import-json">📥 导入 JSON（恢复备份）</button>
+      <button class="action-btn action-cancel" id="btn-action-cancel">取消</button>
+    </div>
+    <input type="file" id="file-import" accept=".json" style="display:none">
+  </div>
+
   <!-- ==================== 删除确认 ==================== -->
   <div class="confirm-overlay" id="confirm-overlay">
     <div class="confirm-dialog">
@@ -149,12 +162,12 @@
       document.write('<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"><\/script>');
     }
   </script>
-  <script src="js/db.js?v=9"></script>
-  <script src="js/list.js?v=9"></script>
-  <script src="js/editor.js?v=9"></script>
-  <script src="js/calendar.js?v=9"></script>
-  <script src="js/search.js?v=9"></script>
-  <script src="js/app.js?v=9"></script>
+  <script src="js/db.js?v=10"></script>
+  <script src="js/list.js?v=10"></script>
+  <script src="js/editor.js?v=10"></script>
+  <script src="js/calendar.js?v=10"></script>
+  <script src="js/search.js?v=10"></script>
+  <script src="js/app.js?v=10"></script>
 
 </body>
 </html>

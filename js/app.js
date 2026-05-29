@@ -98,6 +98,68 @@ var App = (function() {
       });
     }
 
+    // 设置按钮 → 打开导出/导入菜单
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "btn-settings") {
+        document.getElementById("action-overlay").classList.add("open");
+      }
+    });
+
+    // 关闭操作菜单
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "action-overlay" || e.target.id === "btn-action-cancel") {
+        document.getElementById("action-overlay").classList.remove("open");
+      }
+    });
+
+    // 导出 JSON
+    document.addEventListener("click", function(e) {
+      if (e.target.id !== "btn-export-json") { return; }
+      document.getElementById("action-overlay").classList.remove("open");
+      DiaryDB.exportJSON().then(function(count) {
+        window.alert("已导出 " + count + " 篇日记（JSON 格式）");
+      }).catch(function(err) {
+        window.alert("导出失败: " + err.message);
+      });
+    });
+
+    // 导出 HTML
+    document.addEventListener("click", function(e) {
+      if (e.target.id !== "btn-export-html") { return; }
+      document.getElementById("action-overlay").classList.remove("open");
+      DiaryDB.exportHTML().then(function(count) {
+        window.alert("已导出 " + count + " 篇日记（HTML 格式）");
+      }).catch(function(err) {
+        window.alert("导出失败: " + err.message);
+      });
+    });
+
+    // 导入 JSON
+    document.addEventListener("click", function(e) {
+      if (e.target.id !== "btn-import-json") { return; }
+      var fileInput = document.getElementById("file-import");
+      if (fileInput) { fileInput.click(); }
+      document.getElementById("action-overlay").classList.remove("open");
+    });
+
+    document.addEventListener("change", function(e) {
+      if (e.target.id !== "file-import") { return; }
+      var file = e.target.files[0];
+      if (!file) { return; }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        DiaryDB.importJSON(ev.target.result).then(function(count) {
+          window.alert("已导入 " + count + " 篇日记！");
+          if (typeof ListPage !== "undefined") { ListPage.load(); }
+          if (typeof CalendarPage !== "undefined") { CalendarPage.render(); }
+        }).catch(function(err) {
+          window.alert("导入失败: " + err.message);
+        });
+      };
+      reader.readAsText(file);
+      e.target.value = "";
+    });
+
     // 照片灯箱关闭
     document.addEventListener("click", function(e) {
       if (e.target.id === "lightbox-close" || e.target.id === "lightbox") {
