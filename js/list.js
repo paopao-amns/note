@@ -132,8 +132,10 @@ var ListPage = (function() {
     var thumbHtml = "";
     if (entry.media && entry.media.length > 0) {
       var firstMedia = entry.media[0];
-      if (firstMedia.type === "image" && firstMedia.data) {
-        var blob = new Blob([firstMedia.data], { type: "image/jpeg" });
+      var thumbData = firstMedia.thumb || (firstMedia.type === "image" ? firstMedia.data : null);
+      var thumbMime = firstMedia.thumb ? "image/jpeg" : "image/jpeg";
+      if (thumbData) {
+        var blob = new Blob([thumbData], { type: thumbMime });
         var thumbUrl = URL.createObjectURL(blob);
         thumbHtml = '<img class="entry-card-thumb" src="' + thumbUrl + '" alt="">';
       }

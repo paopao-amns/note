@@ -165,10 +165,14 @@ var CalendarPage = (function() {
     if (entry.content && entry.content.length > 60) { preview += "..."; }
 
     var thumbHtml = "";
-    if (entry.media && entry.media.length > 0 && entry.media[0].type === "image" && entry.media[0].data) {
-      var blob = new Blob([entry.media[0].data], { type: "image/jpeg" });
-      var url = URL.createObjectURL(blob);
-      thumbHtml = '<img class="entry-card-thumb" src="' + url + '" alt="">';
+    if (entry.media && entry.media.length > 0) {
+      var firstMedia = entry.media[0];
+      var thumbData = firstMedia.thumb || (firstMedia.type === "image" ? firstMedia.data : null);
+      if (thumbData) {
+        var blob = new Blob([thumbData], { type: "image/jpeg" });
+        var url = URL.createObjectURL(blob);
+        thumbHtml = '<img class="entry-card-thumb" src="' + url + '" alt="">';
+      }
     }
 
     var time = formatTime(entry.createdAt);

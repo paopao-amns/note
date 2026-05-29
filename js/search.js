@@ -64,10 +64,14 @@ var SearchPage = (function() {
     var date = formatDate(entry.createdAt);
 
     var thumbHtml = "";
-    if (entry.media && entry.media.length > 0 && entry.media[0].type === "image" && entry.media[0].data) {
-      var blob = new Blob([entry.media[0].data], { type: "image/jpeg" });
-      var url = URL.createObjectURL(blob);
-      thumbHtml = '<img class="entry-card-thumb" src="' + url + '" alt="" style="float:right;margin-left:8px;">';
+    if (entry.media && entry.media.length > 0) {
+      var firstMedia = entry.media[0];
+      var thumbData = firstMedia.thumb || (firstMedia.type === "image" ? firstMedia.data : null);
+      if (thumbData) {
+        var blob = new Blob([thumbData], { type: "image/jpeg" });
+        var url = URL.createObjectURL(blob);
+        thumbHtml = '<img class="entry-card-thumb" src="' + url + '" alt="" style="float:right;margin-left:8px;">';
+      }
     }
 
     return (

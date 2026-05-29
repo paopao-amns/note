@@ -144,14 +144,24 @@ var Editor = (function() {
     mediaList.forEach(function(item, index) {
       var div = document.createElement("div");
       div.className = "media-item";
-      var blob = new Blob([item.data], { type: item.type === "video" ? "video/mp4" : "image/jpeg" });
-      var url = URL.createObjectURL(blob);
+      var url;
       if (item.type === "image") {
+        url = URL.createObjectURL(new Blob([item.data], { type: "image/jpeg" }));
         div.innerHTML = '<img src="' + url + '" alt="" loading="lazy">' +
           '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
       } else {
-        div.innerHTML = '<video src="' + url + '" muted></video>' +
-          '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
+        // 视频优先显示缩略图
+        var thumbData = item.thumb || item.data;
+        var mime = item.thumb ? "image/jpeg" : "video/mp4";
+        url = URL.createObjectURL(new Blob([thumbData], { type: mime }));
+        if (item.thumb) {
+          div.innerHTML = '<img src="' + url + '" alt="">' +
+            '<span style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:24px;">▶️</span>' +
+            '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
+        } else {
+          div.innerHTML = '<video src="' + url + '" muted></video>' +
+            '<button type="button" class="media-remove" data-index="' + index + '">&times;</button>';
+        }
       }
       mediaGrid.appendChild(div);
     });
@@ -173,18 +183,121 @@ var Editor = (function() {
     if (!currentEntry.media) { currentEntry.media = []; }
 
     Array.from(files).forEach(function(file) {
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        currentEntry.media.push({
-          id: DiaryDB.uuid(),
-          type: type,
-          data: e.target.result,
-          name: file.name
+      if (type === "image") {
+        compressImage(file, function(compressedBuf) {
+          currentEntry.media.push({
+            id: DiaryDB.uuid(),
+            type: "image",
+            data: compressedBuf,
+            name: file.name
+          });
+          renderMedia(currentEntry.media);
         });
-        renderMedia(currentEntry.media);
-      };
-      reader.readAsArrayBuffer(file);
+      } else {
+        // 视频暂不压缩，但先生成缩略图
+        var reader = new FileReader();
+        reader.onload = function(e) {
+          var buf = e.target.result;
+          currentEntry.media.push({
+            id: DiaryDB.uuid(),
+            type: "video",
+            data: buf,
+            name: file.name
+          });
+          renderMedia(currentEntry.media);
+          // 异步生成视频缩略图
+          generateVideoThumb(file, currentEntry.media.length - 1);
+        };
+        reader.readAsArrayBuffer(file);
+      }
     });
+  }
+
+  // 图片压缩：Canvas 缩放至最大宽度 800px，JPEG 质量 0.7
+  function compressImage(file, callback) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var w = img.width;
+        var h = img.height;
+        if (w <= 800) {
+          // 不需要压缩，直接读为 ArrayBuffer
+          readerOnLoadToBuf(e.target.result, callback);
+          return;
+        }
+        var ratio = 800 / w;
+        var newW = 800;
+        var newH = Math.round(h * ratio);
+        var canvas = document.createElement("canvas");
+        canvas.width = newW;
+        canvas.height = newH;
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, newW, newH);
+        canvas.toBlob(function(blob) {
+          var blobReader = new FileReader();
+          blobReader.onload = function(ev) {
+            callback(ev.target.result);
+          };
+          blobReader.readAsArrayBuffer(blob);
+        }, "image/jpeg", 0.7);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // 小图片直接转 ArrayBuffer
+  function readerOnLoadToBuf(dataUrl, callback) {
+    // dataURL → ArrayBuffer
+    var parts = dataUrl.split(",");
+    // base64 → binary
+    var binary = atob(parts[1]);
+    var buf = new ArrayBuffer(binary.length);
+    var view = new Uint8Array(buf);
+    for (var i = 0; i < binary.length; i++) {
+      view[i] = binary.charCodeAt(i);
+    }
+    callback(buf);
+  }
+
+  // 生成视频缩略图
+  function generateVideoThumb(file, mediaIndex) {
+    var video = document.createElement("video");
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+    var blobUrl = URL.createObjectURL(file);
+    video.src = blobUrl;
+
+    video.onloadeddata = function() {
+      video.currentTime = 1; // 跳到第 1 秒
+    };
+
+    video.onseeked = function() {
+      var canvas = document.createElement("canvas");
+      var w = video.videoWidth;
+      var h = video.videoHeight;
+      canvas.width = Math.min(w, 400);
+      canvas.height = Math.round(h * (canvas.width / w));
+      var ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(function(blob) {
+        var blobReader = new FileReader();
+        blobReader.onload = function(ev) {
+          if (currentEntry && currentEntry.media && currentEntry.media[mediaIndex]) {
+            currentEntry.media[mediaIndex].thumb = ev.target.result;
+            renderMedia(currentEntry.media);
+          }
+        };
+        blobReader.readAsArrayBuffer(blob);
+      }, "image/jpeg", 0.7);
+      URL.revokeObjectURL(blobUrl);
+    };
+
+    video.onerror = function() {
+      URL.revokeObjectURL(blobUrl);
+    };
   }
 
   function formatDate(iso) {
