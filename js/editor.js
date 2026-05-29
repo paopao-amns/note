@@ -8,11 +8,13 @@ var Editor = (function() {
 
   var currentEntry = null;  // 当前编辑的日记（null = 新建）
   var isOpen = false;
-  var returnToPage = "list"; // 保存/返回后跳回的页面
+  var returnToPage = "list";
+  var autoSaveTimer = null;
+  var hasContent = false;   // 是否已有内容（用于自动保存判断）
 
   // DOM 元素
   var editorPage, editorTitle, editorPageTitle, textContent;
-  var mediaGrid, btnSave, btnBack, editorDate;
+  var mediaGrid, btnSave, btnBack, btnDelete, editorDate;
   var fileImage, fileVideo;
 
   function cacheDom() {
@@ -23,6 +25,7 @@ var Editor = (function() {
     mediaGrid = document.getElementById("media-grid");
     btnSave = document.getElementById("editor-save");
     btnBack = document.getElementById("editor-back");
+    btnDelete = document.getElementById("editor-delete");
     editorDate = document.getElementById("editor-date");
     fileImage = document.getElementById("file-image");
     fileVideo = document.getElementById("file-video");
@@ -34,11 +37,14 @@ var Editor = (function() {
     if (!editorPage) { return; }
     returnToPage = fromPage || "list";
     currentEntry = null;
+    hasContent = false;
+    clearAutoSave();
     if (editorTitle) { editorTitle.value = ""; }
     if (textContent) { textContent.value = ""; }
     if (mediaGrid) { mediaGrid.innerHTML = ""; }
     if (editorPageTitle) { editorPageTitle.textContent = "新建日记"; }
     if (editorDate) { editorDate.textContent = ""; }
+    if (btnDelete) { btnDelete.style.display = "none"; }
     showPage();
   }
 
@@ -47,6 +53,9 @@ var Editor = (function() {
     cacheDom();
     if (!editorPage) { return; }
     returnToPage = fromPage || "list";
+    currentEntry = null;
+    hasContent = true;
+    clearAutoSave();
 
     DiaryDB.getEntry(id).then(function(entry) {
       if (!entry) { return; }
@@ -55,6 +64,7 @@ var Editor = (function() {
       if (textContent) { textContent.value = entry.content || ""; }
       if (editorPageTitle) { editorPageTitle.textContent = "编辑日记"; }
       if (editorDate) { editorDate.textContent = "创建于 " + formatDate(entry.createdAt); }
+      if (btnDelete) { btnDelete.style.display = ""; }
       renderMedia(entry.media);
       showPage();
     }).catch(function(err) {
@@ -88,51 +98,134 @@ var Editor = (function() {
   // 关闭编辑器，返回上一页
   function close() {
     if (!isOpen) { return; }
+    // 关闭前尝试最终保存
+    finalSaveAndClose();
+  }
+
+  function finalSaveAndClose() {
+    clearAutoSave();
+    var title = (editorTitle ? editorTitle.value.trim() : "");
+    var content = (textContent ? textContent.value.trim() : "");
+
+    // 没有任何内容 → 直接关闭
+    var noContent = !title && !content && (!currentEntry || !currentEntry.media || currentEntry.media.length === 0);
+    if (noContent) {
+      doClose();
+      return;
+    }
+
+    // 检查内容是否变化
+    if (currentEntry && title === (currentEntry.title || "") && content === (currentEntry.content || "")) {
+      doClose();
+      return;
+    }
+
+    // 有内容 → 保存
+    saveNow(title, content, function() { doClose(); });
+  }
+
+  function doClose() {
     isOpen = false;
     currentEntry = null;
+    clearAutoSave();
 
     editorPage.classList.remove("active");
 
-    // 恢复 tab 栏和 FAB
     var tabBar = document.querySelector(".tab-bar");
     var fab = document.getElementById("fab-new");
     if (tabBar) { tabBar.style.display = ""; }
     if (fab) { fab.style.display = ""; }
 
     document.body.style.overflow = "";
-
-    // 触发页面切换以刷新列表
     App.switchTab(returnToPage);
   }
 
-  // 保存日记
+  // 保存日记（手动点击保存按钮）
   function save() {
     var title = editorTitle ? editorTitle.value.trim() : "";
     var content = textContent ? textContent.value.trim() : "";
 
-    // 不允许内容全部为空
     if (!title && !content && (!currentEntry || !currentEntry.media || currentEntry.media.length === 0)) {
       showToast("请输入标题或内容");
       return;
     }
 
-    var entry = currentEntry ? {
-      id: currentEntry.id,
-      title: title,
-      content: content,
-      media: currentEntry.media || [],
-      createdAt: currentEntry.createdAt
-    } : {
-      title: title,
-      content: content,
-      media: []
-    };
+    saveNow(title, content, function() {
+      close();
+    });
+  }
+
+  // 执行实际的保存操作
+  function saveNow(title, content, callback) {
+    clearAutoSave();
+
+    var entry;
+    if (currentEntry) {
+      entry = {
+        id: currentEntry.id,
+        title: title,
+        content: content,
+        media: currentEntry.media || [],
+        createdAt: currentEntry.createdAt
+      };
+    } else {
+      entry = {
+        title: title,
+        content: content,
+        media: currentEntry.media || []
+      };
+    }
 
     DiaryDB.saveEntry(entry).then(function(saved) {
-      close();
+      // 如果是新建的，现在变成编辑模式
+      if (!currentEntry) {
+        currentEntry = saved;
+        if (btnDelete) { btnDelete.style.display = ""; }
+        if (editorPageTitle) { editorPageTitle.textContent = "编辑日记"; }
+        if (editorDate) { editorDate.textContent = "创建于 " + formatDate(saved.createdAt); }
+      } else {
+        currentEntry = saved;
+      }
       window.dispatchEvent(new CustomEvent("entry-saved", { detail: saved }));
+      if (callback) { callback(); }
     }).catch(function(err) {
       showToast("保存失败: " + err.message);
+    });
+  }
+
+  // 自动保存（2秒防抖）
+  function debouncedAutoSave() {
+    clearAutoSave();
+    autoSaveTimer = setTimeout(function() {
+      var title = editorTitle ? editorTitle.value.trim() : "";
+      var content = textContent ? textContent.value.trim() : "";
+
+      // 内容为空且无已有条目 → 不保存（避免创建空白日记）
+      if (!title && !content && !currentEntry) { return; }
+
+      // 跟已有条目内容一样 → 不重复保存
+      if (currentEntry && title === (currentEntry.title || "") && content === (currentEntry.content || "")) {
+        return;
+      }
+
+      saveNow(title, content);
+    }, 2000);
+  }
+
+  function clearAutoSave() {
+    if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; }
+  }
+
+  // 删除当前日记
+  function deleteCurrentEntry() {
+    if (!isOpen || !currentEntry) { return; }
+    if (!window.confirm("确定要删除这篇日记吗？\n删除后无法恢复")) { return; }
+
+    DiaryDB.deleteEntry(currentEntry.id).then(function() {
+      window.dispatchEvent(new CustomEvent("entry-saved"));
+      doClose();
+    }).catch(function(err) {
+      showToast("删除失败: " + err.message);
     });
   }
 
@@ -329,6 +422,11 @@ var Editor = (function() {
       if (e.target.id === "editor-back") { close(); }
     });
 
+    // 删除按钮
+    document.addEventListener("click", function(e) {
+      if (e.target.id === "editor-delete") { deleteCurrentEntry(); }
+    });
+
     // 添加图片
     document.addEventListener("click", function(e) {
       if (e.target.id === "btn-add-image") {
@@ -362,6 +460,15 @@ var Editor = (function() {
       if (e.target.classList.contains("media-remove")) {
         var idx = parseInt(e.target.getAttribute("data-index"));
         removeMedia(idx);
+      }
+    });
+
+    // 自动保存：监听输入
+    document.addEventListener("input", function(e) {
+      if (!isOpen) { return; }
+      if (e.target.id === "editor-title" || e.target.id === "editor-content") {
+        hasContent = true;
+        debouncedAutoSave();
       }
     });
   }

@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="assets/icon.svg">
   <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
   <title>我的日记</title>
-  <link rel="stylesheet" href="css/style.css?v=10">
+  <link rel="stylesheet" href="css/style.css?v=11">
   <!-- Dexie.js 在底部 body 中加载，确保在业务脚本之前可用 -->
 </head>
 <body>
@@ -85,6 +85,7 @@
       <header class="top-bar editor-top-bar">
         <button class="top-bar-back" id="editor-back">← 返回</button>
         <span class="top-bar-title" id="editor-page-title">新建日记</span>
+        <button class="top-bar-delete" id="editor-delete" title="删除日记">🗑️</button>
         <button class="top-bar-save" id="editor-save">保存</button>
       </header>
       <main class="content editor-body">
@@ -162,12 +163,12 @@
       document.write('<script src="https://unpkg.com/dexie@3/dist/dexie.min.js"><\/script>');
     }
   </script>
-  <script src="js/db.js?v=10"></script>
-  <script src="js/list.js?v=10"></script>
-  <script src="js/editor.js?v=10"></script>
-  <script src="js/calendar.js?v=10"></script>
-  <script src="js/search.js?v=10"></script>
-  <script src="js/app.js?v=10"></script>
+  <script src="js/db.js?v=11"></script>
+  <script src="js/list.js?v=11"></script>
+  <script src="js/editor.js?v=11"></script>
+  <script src="js/calendar.js?v=11"></script>
+  <script src="js/search.js?v=11"></script>
+  <script src="js/app.js?v=11"></script>
 
 </body>
 </html>

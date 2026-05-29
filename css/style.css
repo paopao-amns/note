@@ -306,6 +306,16 @@ input, textarea {
   min-height: 44px;
 }
 
+.top-bar-delete {
+  font-size: 18px;
+  color: var(--danger);
+  min-width: 44px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .top-bar-save {
   font-size: 16px;
   font-weight: 600;

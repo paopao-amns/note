@@ -1,17 +1,17 @@
 // Service Worker — 缓存策略：预缓存核心文件，运行时缓存 CDN 资源
-const CACHE_NAME = "diary-v10";
+const CACHE_NAME = "diary-v11";
 
 // 预缓存的文件列表（部署后首次访问即缓存）
 const PRECACHE_URLS = [
   "/note/",
   "/note/index.html",
-  "/note/css/style.css?v=10",
-  "/note/js/app.js?v=10",
-  "/note/js/db.js?v=10",
-  "/note/js/editor.js?v=10",
-  "/note/js/list.js?v=10",
-  "/note/js/calendar.js?v=10",
-  "/note/js/search.js?v=10",
+  "/note/css/style.css?v=11",
+  "/note/js/app.js?v=11",
+  "/note/js/db.js?v=11",
+  "/note/js/editor.js?v=11",
+  "/note/js/list.js?v=11",
+  "/note/js/calendar.js?v=11",
+  "/note/js/search.js?v=11",
   "/note/assets/icon.svg"
 ];
 
