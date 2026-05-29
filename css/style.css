@@ -268,7 +268,7 @@ input, textarea {
 
 /* --- 编辑器页面（全屏二级页面）--- */
 #page-editor.page.active {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
